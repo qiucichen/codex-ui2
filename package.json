@@ -1,0 +1,10 @@
+{
+  "name": "ai-report-ui-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI 报告前端界面静态原型，使用模拟数据展示五栏工作台。",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "check": "node --check app.js"
+  }
+}
