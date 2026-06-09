@@ -1,0 +1,10 @@
+{
+  "name": "ai-report-ui-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI 报告前端界面静态原型，使用模拟数据展示五栏工作台。",
+  "scripts": {
+    "start": "python3 -m uvicorn server:app --host 0.0.0.0 --port 4173 --reload",
+    "check": "node --check app.js && python3 -m py_compile server.py"
+  }
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 报告工作台</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="report-workbench" aria-label="AI 报告工作台">
+      <section class="panel history-panel" aria-labelledby="history-title">
+        <div class="panel-header">
+          <p class="eyebrow">左 1</p>
+          <h1 id="history-title">历史报告</h1>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </section>
+
+      <section class="panel binding-panel" aria-labelledby="binding-title">
+        <div class="panel-header">
+          <p class="eyebrow">左 2</p>
+          <h2 id="binding-title">报告数据绑定</h2>
+          <span class="panel-tip">目录树</span>
+        </div>
+        <div id="data-tree" class="data-tree" role="tree"></div>
+      </section>
+
+      <section class="panel chat-panel" aria-labelledby="chat-title">
+        <div class="panel-header chat-header">
+          <div>
+            <p class="eyebrow">左 3</p>
+            <h2 id="chat-title">当前报告对话</h2>
+          </div>
+          <span id="current-report-chip" class="report-chip"></span>
+        </div>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+        <form id="chat-form" class="chat-input" aria-label="发送消息">
+          <input id="chat-input" type="text" placeholder="输入请求，例如：帮我补充本季度风险提示" aria-label="消息内容" />
+          <button id="send-button" type="submit">发送</button>
+        </form>
+        <p id="app-error" class="app-error" hidden></p>
+      </section>
+
+      <section class="panel outline-panel" aria-labelledby="outline-title">
+        <div class="panel-header">
+          <p class="eyebrow">左 4</p>
+          <h2 id="outline-title">报告大纲预览</h2>
+        </div>
+        <div id="outline-preview" class="outline-preview"></div>
+      </section>
+
+      <section class="panel detail-panel" aria-labelledby="detail-title">
+        <div class="panel-header detail-header">
+          <div>
+            <p class="eyebrow">左 5</p>
+            <h2 id="detail-title">报告详情预览</h2>
+          </div>
+          <button class="ghost-button" type="button">导出 PDF</button>
+        </div>
+        <article id="report-detail" class="report-detail"></article>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
