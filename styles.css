@@ -414,3 +414,58 @@ body {
   font-size: 12px;
   font-weight: 800;
 }
+
+.app-error {
+  margin: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.history-card-title,
+.history-card-summary {
+  display: block;
+  text-align: left;
+}
+
+.history-card {
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.history-card-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.history-card-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tree-item {
+  width: calc(100% - 22px);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-item:not(.bound):hover {
+  background: #f8fafc;
+}
+
+.chat-input button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

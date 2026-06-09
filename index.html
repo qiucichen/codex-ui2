@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI 报告工作台</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="report-workbench" aria-label="AI 报告工作台">
@@ -34,10 +34,11 @@
           <span id="current-report-chip" class="report-chip"></span>
         </div>
         <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-        <form class="chat-input" aria-label="发送消息">
-          <input type="text" value="帮我补充本季度风险提示" aria-label="消息内容" />
-          <button type="button">发送</button>
+        <form id="chat-form" class="chat-input" aria-label="发送消息">
+          <input id="chat-input" type="text" placeholder="输入请求，例如：帮我补充本季度风险提示" aria-label="消息内容" />
+          <button id="send-button" type="submit">发送</button>
         </form>
+        <p id="app-error" class="app-error" hidden></p>
       </section>
 
       <section class="panel outline-panel" aria-labelledby="outline-title">
@@ -60,6 +61,6 @@
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <script src="/static/app.js"></script>
   </body>
 </html>

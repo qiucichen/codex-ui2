@@ -1,127 +1,117 @@
-const mockReports = [
-  {
-    id: 'r-2026-q2',
-    title: '2026 Q2 智能经营分析报告',
-    date: '2026-06-05',
-    owner: '战略分析组',
-    status: '已生成',
-    summary: '聚焦收入增长、客户结构与风险提示。',
-    metrics: [
-      { label: '收入规模', value: '¥8,420万' },
-      { label: '同比增长', value: '+18.6%' },
-      { label: '风险事项', value: '5项' }
-    ],
-    tags: ['经营分析', '季度复盘', '董事会材料'],
-    boundData: [
-      {
-        title: '经营数据',
-        children: [
-          { title: '销售收入明细', bound: true },
-          { title: '区域渠道贡献', bound: true },
-          { title: '重点客户续约率', bound: true }
-        ]
-      },
-      {
-        title: '财务数据',
-        children: [
-          { title: '成本费用结构', bound: true },
-          { title: '现金流预测', bound: false },
-          { title: '毛利率拆解', bound: true }
-        ]
-      },
-      {
-        title: '外部数据',
-        children: [
-          { title: '行业景气指数', bound: false },
-          { title: '竞品价格监测', bound: true }
-        ]
-      }
-    ],
-    chat: [
-      { role: 'user', text: '请基于已绑定的数据生成一份经营分析报告。' },
-      { role: 'assistant', text: '已读取销售、财务与竞品监测数据，建议报告采用“整体表现—结构拆解—风险建议”的叙事结构。' },
-      { role: 'user', text: '风险提示需要突出现金流和大客户集中度。' },
-      { role: 'assistant', text: '已将现金流预测缺口、大客户续约波动纳入风险章节，并在详情预览中增加行动建议。' }
-    ],
-    outline: [
-      { title: '一、执行摘要', points: ['核心结论', '关键指标变化', '管理层关注事项'] },
-      { title: '二、经营表现', points: ['收入规模与增长', '区域渠道贡献', '客户结构变化'] },
-      { title: '三、财务与风险', points: ['成本费用结构', '现金流压力', '大客户集中度'] },
-      { title: '四、行动建议', points: ['短期跟进事项', '中期优化方向', '指标监控机制'] }
-    ],
-    detail: {
-      lead: '本季度公司收入保持双位数增长，核心区域延续高景气，但费用投入节奏和大客户续约不确定性需要持续跟踪。',
-      sections: [
-        {
-          title: '经营表现',
-          content: 'Q2 收入达到 ¥8,420 万，同比增长 18.6%。华东与华南渠道合计贡献 63% 的新增收入，其中企业级客户套餐升级是主要拉动因素。'
-        },
-        {
-          title: '风险提示',
-          list: ['现金流预测数据尚未完全绑定，建议补齐未来 12 周回款计划。', '前五大客户收入占比升至 41%，续约波动可能影响下季度确认收入。', '竞品在中端产品线出现价格下探，需要评估促销策略与毛利影响。']
-        },
-        {
-          title: '建议动作',
-          content: '建议将重点客户续约、费用使用率和现金回款纳入周度追踪看板，并由销售、财务、运营共同维护数据口径。'
-        }
-      ]
-    }
-  },
-  {
-    id: 'r-market',
-    title: '新能源行业洞察报告',
-    date: '2026-05-28',
-    owner: '行业研究组',
-    status: '草稿',
-    summary: '分析政策变化、供需结构与竞品动态。'
-  },
-  {
-    id: 'r-customer',
-    title: '企业客户满意度分析',
-    date: '2026-05-18',
-    owner: '客户成功部',
-    status: '已归档',
-    summary: '梳理 NPS、续约意向和服务响应效率。'
-  },
-  {
-    id: 'r-risk',
-    title: '供应链风险月报',
-    date: '2026-04-30',
-    owner: '运营管理部',
-    status: '已生成',
-    summary: '追踪供应商交付、库存安全线与成本波动。'
-  }
-];
+const SESSION_ID = 'demo-session';
+let state = null;
 
-const activeReport = mockReports[0];
+const elements = {
+  history: document.querySelector('#history-list'),
+  tree: document.querySelector('#data-tree'),
+  messages: document.querySelector('#chat-messages'),
+  outline: document.querySelector('#outline-preview'),
+  detail: document.querySelector('#report-detail'),
+  reportChip: document.querySelector('#current-report-chip'),
+  form: document.querySelector('#chat-form'),
+  input: document.querySelector('#chat-input'),
+  sendButton: document.querySelector('#send-button'),
+  error: document.querySelector('#app-error')
+};
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `请求失败：${response.status}`);
+  }
+  return response.json();
+}
+
+function setLoading(isLoading) {
+  elements.sendButton.disabled = isLoading;
+  elements.sendButton.textContent = isLoading ? '发送中...' : '发送';
+}
+
+function showError(message = '') {
+  elements.error.textContent = message;
+  elements.error.hidden = !message;
+}
+
+async function loadState() {
+  showError();
+  state = await requestJson(`/api/state?session_id=${encodeURIComponent(SESSION_ID)}`);
+  renderAll();
+}
+
+async function selectReport(reportId) {
+  showError();
+  state = await requestJson('/api/reports/select', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: SESSION_ID, report_id: reportId })
+  });
+  renderAll();
+}
+
+async function toggleBinding(groupTitle, itemTitle) {
+  showError();
+  state = await requestJson('/api/bindings/toggle', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: SESSION_ID, group_title: groupTitle, item_title: itemTitle })
+  });
+  renderAll();
+}
+
+async function sendMessage(message) {
+  setLoading(true);
+  showError();
+  state = await requestJson('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: SESSION_ID, message })
+  });
+  renderAll();
+  setLoading(false);
+}
 
 function renderHistory() {
-  const history = document.querySelector('#history-list');
-  history.innerHTML = mockReports
+  const activeId = state.activeReport.id;
+  elements.history.innerHTML = state.history
     .map(
       report => `
-        <article class="history-card ${report.id === activeReport.id ? 'active' : ''}">
-          <h3>${report.title}</h3>
-          <p>${report.summary}</p>
-          <div class="history-meta">
-            <span>${report.date}</span>
-            <span class="status-dot">${report.status}</span>
-          </div>
-        </article>
+        <button class="history-card ${report.id === activeId ? 'active' : ''}" type="button" data-report-id="${escapeHtml(report.id)}">
+          <span class="history-card-title">${escapeHtml(report.title)}</span>
+          <span class="history-card-summary">${escapeHtml(report.summary)}</span>
+          <span class="history-meta">
+            <span>${escapeHtml(report.date)}</span>
+            <span class="status-dot">${escapeHtml(report.status)}</span>
+          </span>
+        </button>
       `
     )
     .join('');
 }
 
 function renderDataTree() {
-  const tree = document.querySelector('#data-tree');
-  tree.innerHTML = activeReport.boundData
+  elements.tree.innerHTML = state.activeReport.boundData
     .map(
       group => `
         <div class="tree-group" role="group">
-          <div class="tree-title" role="treeitem" aria-expanded="true">${group.title}</div>
+          <div class="tree-title" role="treeitem" aria-expanded="true">${escapeHtml(group.title)}</div>
           ${group.children
-            .map(item => `<div class="tree-item ${item.bound ? 'bound' : ''}" role="treeitem">${item.title}</div>`)
+            .map(
+              item => `
+                <button class="tree-item ${item.bound ? 'bound' : ''}" type="button" role="treeitem" data-group-title="${escapeHtml(group.title)}" data-item-title="${escapeHtml(item.title)}">
+                  ${escapeHtml(item.title)}
+                </button>
+              `
+            )
             .join('')}
         </div>
       `
@@ -130,22 +120,22 @@ function renderDataTree() {
 }
 
 function renderChat() {
-  document.querySelector('#current-report-chip').textContent = activeReport.title;
-  const messages = document.querySelector('#chat-messages');
-  messages.innerHTML = activeReport.chat
-    .map(message => `<div class="message ${message.role}">${message.text}</div>`)
+  elements.reportChip.textContent = `${state.phase} · ${state.activeReport.title}`;
+  elements.messages.innerHTML = state.activeReport.chat
+    .map(message => `<div class="message ${escapeHtml(message.role)}">${escapeHtml(message.text)}</div>`)
     .join('');
+  elements.messages.scrollTop = elements.messages.scrollHeight;
 }
 
 function renderOutline() {
-  const outline = document.querySelector('#outline-preview');
-  outline.innerHTML = activeReport.outline
+  const outline = state.outline || state.activeReport.outline || [];
+  elements.outline.innerHTML = outline
     .map(
       (item, index) => `
         <section class="outline-card">
           <span class="outline-index">${index + 1}</span>
-          <h3>${item.title}</h3>
-          <ul>${item.points.map(point => `<li>${point}</li>`).join('')}</ul>
+          <h3>${escapeHtml(item.title)}</h3>
+          <ul>${item.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul>
         </section>
       `
     )
@@ -153,35 +143,70 @@ function renderOutline() {
 }
 
 function renderDetail() {
-  const detail = document.querySelector('#report-detail');
-  detail.innerHTML = `
+  const report = state.activeReport;
+  elements.detail.innerHTML = `
     <header class="report-cover">
-      <h2>${activeReport.title}</h2>
-      <p>${activeReport.owner} · ${activeReport.date} · 模拟数据生成</p>
+      <h2>${escapeHtml(report.title)}</h2>
+      <p>${escapeHtml(report.owner)} · ${escapeHtml(report.date)} · FastAPI 模拟数据</p>
     </header>
     <section class="metrics">
-      ${activeReport.metrics
-        .map(metric => `<div class="metric"><span>${metric.label}</span><strong>${metric.value}</strong></div>`)
+      ${report.metrics
+        .map(metric => `<div class="metric"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong></div>`)
         .join('')}
     </section>
     <section class="detail-section">
       <h3>摘要</h3>
-      <p>${activeReport.detail.lead}</p>
-      <div class="tag-row">${activeReport.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}</div>
+      <p>${escapeHtml(report.detail.lead)}</p>
+      <div class="tag-row">${report.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
     </section>
-    ${activeReport.detail.sections
+    ${report.detail.sections
       .map(section => {
         const body = section.list
-          ? `<ul>${section.list.map(item => `<li>${item}</li>`).join('')}</ul>`
-          : `<p>${section.content}</p>`;
-        return `<section class="detail-section"><h3>${section.title}</h3>${body}</section>`;
+          ? `<ul>${section.list.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+          : `<p>${escapeHtml(section.content)}</p>`;
+        return `<section class="detail-section"><h3>${escapeHtml(section.title)}</h3>${body}</section>`;
       })
       .join('')}
   `;
 }
 
-renderHistory();
-renderDataTree();
-renderChat();
-renderOutline();
-renderDetail();
+function renderAll() {
+  renderHistory();
+  renderDataTree();
+  renderChat();
+  renderOutline();
+  renderDetail();
+}
+
+elements.history.addEventListener('click', event => {
+  const card = event.target.closest('[data-report-id]');
+  if (card) {
+    selectReport(card.dataset.reportId).catch(error => showError(error.message));
+  }
+});
+
+elements.tree.addEventListener('click', event => {
+  const item = event.target.closest('[data-group-title][data-item-title]');
+  if (item) {
+    toggleBinding(item.dataset.groupTitle, item.dataset.itemTitle).catch(error => showError(error.message));
+  }
+});
+
+elements.form.addEventListener('submit', event => {
+  event.preventDefault();
+  const message = elements.input.value.trim();
+  if (!message) {
+    showError('请输入消息后再发送。');
+    return;
+  }
+  sendMessage(message)
+    .then(() => {
+      elements.input.value = '';
+    })
+    .catch(error => {
+      setLoading(false);
+      showError(error.message);
+    });
+});
+
+loadState().catch(error => showError(`初始化失败：${error.message}`));
